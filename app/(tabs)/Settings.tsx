@@ -25,8 +25,14 @@ const Settings = () => {
 
   const handleSignOut = async () => {
     setLoading(true);
-    await signOut();
-    router.replace('/(auth)/sign-in');
+    try {
+      await signOut();
+      router.replace('/(auth)/sign-in');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

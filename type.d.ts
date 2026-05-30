@@ -4,7 +4,7 @@ declare global {
     interface AppTab {
         name: string;
         title: string;
-        icon: ImageSourcePropType;
+        icons: ImageSourcePropType;
     }
 
 
@@ -15,7 +15,7 @@ declare global {
 
 interface Subscription {
     id: string;
-    icon: ImageSourcePropType;
+    icons: ImageSourcePropType;
     name: string;
     plan?: string;
     category?: string;

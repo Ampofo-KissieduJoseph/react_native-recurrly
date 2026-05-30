@@ -178,7 +178,7 @@ function MfaStep({ signIn, fetchStatus, clerkErrors, router }: MfaStepProps) {
 // ─── Main Sign-In Screen ───────────────────────────────────────────────────────
 
 export default function SignInScreen() {
-  const { signIn, errors: clerkErrors, fetchStatus } = useSignIn();
+  const { signIn, isLoaded, errors: clerkErrors, fetchStatus } = useSignIn();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -189,8 +189,13 @@ export default function SignInScreen() {
 
   const loading = fetchStatus === 'fetching';
 
+  // Guard against undefined signIn or Clerk not loaded yet
+  if (!isLoaded || !signIn) {
+    return null;
+  }
+
   // ── MFA step ──
-  if (signIn.status === 'needs_client_trust') {
+  if (signIn.status === 'needs_client_trust' || signIn.status === 'needs_second_factor') {
     return (
       <MfaStep
         signIn={signIn}

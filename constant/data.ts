@@ -1,5 +1,12 @@
 import { icons } from "@/constant/icons";
 
+// Helper to generate a future ISO date string dynamically
+function getFutureDate(days: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString();
+}
+
 export const tabs = [
     {name: 'index', title: 'home', icons: icons.home},
     {name: 'Subscriptions', title: 'Subscriptions', icons: icons.wallet},
@@ -13,7 +20,7 @@ export const HOME_USER = {
 
 export const HOME_BALANCE = {
     amount: 2489.48,
-    nextRenewalDate: "2026-03-18T09:00:00.000Z",
+    nextRenewalDate: getFutureDate(3),
 };
 
 export const UPCOMING_SUBSCRIPTIONS: UpcomingSubscription[] = [
@@ -56,7 +63,7 @@ export const HOME_SUBSCRIPTIONS: Subscription[] = [
         price: 77.49,
         currency: "USD",
         billing: "Monthly",
-        renewalDate: "2026-03-20T10:00:00.000Z",
+        renewalDate: getFutureDate(15),
         color: "#f5c542",
     },
     {
@@ -71,7 +78,7 @@ export const HOME_SUBSCRIPTIONS: Subscription[] = [
         price: 9.99,
         currency: "USD",
         billing: "Monthly",
-        renewalDate: "2026-03-24T10:00:00.000Z",
+        renewalDate: getFutureDate(19),
         color: "#e8def8",
     },
     {
@@ -86,7 +93,7 @@ export const HOME_SUBSCRIPTIONS: Subscription[] = [
         price: 20.0,
         currency: "USD",
         billing: "Monthly",
-        renewalDate: "2026-03-27T10:00:00.000Z",
+        renewalDate: getFutureDate(22),
         color: "#b8d4e3",
     },
     {
@@ -101,7 +108,7 @@ export const HOME_SUBSCRIPTIONS: Subscription[] = [
         price: 119.99,
         currency: "USD",
         billing: "Yearly",
-        renewalDate: "2026-04-02T10:00:00.000Z",
+        renewalDate: getFutureDate(28),
         color: "#b8e8d0",
     },
 ];

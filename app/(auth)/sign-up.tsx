@@ -122,31 +122,45 @@ function VerifyStep({ signUp, fetchStatus, clerkErrors, email, router }: VerifyS
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  const loading = fetchStatus === 'fetching';
+  const loading = fetchStatus === 'fetching' || isVerifying;
 
   const handleVerify = async () => {
+    if (isVerifying || fetchStatus === 'fetching') return;
     const err = validateCode(code);
     if (err) { setCodeError(err); return; }
     setCodeError(null);
 
-    await signUp.verifications.verifyEmailCode({ code: code.trim() });
+    setIsVerifying(true);
+    try {
+      await signUp.verifications.verifyEmailCode({ code: code.trim() });
 
-    if (signUp.status === 'complete') {
-      await signUp.finalize({
-        navigate: ({ session, decorateUrl }) => {
-          if (session?.currentTask) return;
-          const url = decorateUrl('/');
-          router.replace(url as Href);
-        },
-      });
+      if (signUp.status === 'complete') {
+        await signUp.finalize({
+          navigate: ({ session, decorateUrl }) => {
+            if (session?.currentTask) return;
+            const url = decorateUrl('/');
+            router.replace(url as Href);
+          },
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
   const handleResend = async () => {
-    await signUp.verifications.sendEmailCode();
-    setResent(true);
-    setTimeout(() => setResent(false), 5000);
+    if (resent || loading) return;
+    try {
+      await signUp.verifications.sendEmailCode();
+      setResent(true);
+      setTimeout(() => setResent(false), 5000);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const clerkCodeErr = clerkErrors?.fields?.code?.message;
@@ -237,8 +251,8 @@ function VerifyStep({ signUp, fetchStatus, clerkErrors, email, router }: VerifyS
 // ─── Main Sign-Up Screen ───────────────────────────────────────────────────────
 
 export default function SignUpScreen() {
-  const { signUp, errors: clerkErrors, fetchStatus } = useSignUp();
-  const { isSignedIn } = useAuth();
+  const { isLoaded: signUpLoaded, signUp, errors: clerkErrors, fetchStatus } = useSignUp();
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -246,8 +260,14 @@ export default function SignUpScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loading = fetchStatus === 'fetching';
+  const loading = fetchStatus === 'fetching' || isSubmitting;
+
+  // Guard against uninitialized Clerk hooks
+  if (!signUpLoaded || !authLoaded || !signUp) {
+    return null;
+  }
 
   // ── Already signed in — just bail ──
   if (signUp.status === 'complete' || isSignedIn) {
@@ -282,18 +302,29 @@ export default function SignUpScreen() {
 
   // ── Submit ──
   const handleSubmit = async () => {
+    if (isSubmitting || loading || fetchStatus === 'fetching' || !signUpLoaded || !signUp) return;
     if (!validateAll()) return;
 
-    const { error } = await signUp.password({
-      emailAddress: email.trim(),
-      password,
-    });
-    if (error) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await signUp.password({
+        emailAddress: email.trim(),
+        password,
+      });
+      if (error) {
+        setIsSubmitting(false);
+        return;
+      }
 
-    await signUp.verifications.sendEmailCode();
+      await signUp.verifications.sendEmailCode();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const canSubmit = email.length > 0 && password.length > 0 && !loading;
+  const canSubmit = email.length > 0 && password.length > 0 && !loading && signUpLoaded && !isSubmitting;
 
   // Clerk field errors
   const clerkEmailErr = clerkErrors?.fields?.emailAddress?.message;
@@ -368,7 +399,7 @@ export default function SignUpScreen() {
                     autoComplete="new-password"
                     textContentType="newPassword"
                     returnKeyType="done"
-                    onSubmitEditing={handleSubmit}
+                    onSubmitEditing={!loading ? handleSubmit : undefined}
                     style={{ paddingRight: 52 }}
                   />
                   <Pressable
