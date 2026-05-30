@@ -1,10 +1,9 @@
-import { Link } from "expo-router";
+import { useUser } from "@clerk/expo";
 import {FlatList, Image, Text, View} from "react-native";
 import "@/global.css";
 import {SafeAreaView as RNSafeAreaView} from "react-native-safe-area-context";
 import {styled} from "nativewind";
-import images from "@/constant/image"
-import {HOME_BALANCE, HOME_SUBSCRIPTIONS, HOME_USER, UPCOMING_SUBSCRIPTIONS} from "@/constant/data"
+import {HOME_BALANCE, HOME_SUBSCRIPTIONS, UPCOMING_SUBSCRIPTIONS} from "@/constant/data"
 import {icons} from "@/constant/icons"
 import {formatCurrency} from "@/lib/utils";
 import dayjs from "dayjs";
@@ -12,21 +11,48 @@ import ListHeadings from "@/app-example/components/ListHeadings";
 import UpcomingSubcriptionsCard from "@/app-example/components/UpcomingSubcriptionsCard";
 import SubscriptionCard from "@/app-example/components/SubscriptionCard";
 import {useState} from "react";
+import { colors } from "@/constant/theme";
 
 const SafeAreaView = styled(RNSafeAreaView);
+
 export default function Index() {
     const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
+    const { user } = useUser();
+
+    // Derive display name: full name → email prefix → "There"
+    const displayName = user?.fullName
+        || (user?.firstName ? `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`.trim() : null)
+        || user?.primaryEmailAddress?.emailAddress?.split('@')[0]
+        || 'There';
+
+    // First initial for fallback avatar
+    const initial = displayName[0]?.toUpperCase() ?? '?';
+
   return (
     <SafeAreaView className={"flex-1 bg-background p-5"}>
-        {/*<View className="flex-1">*/}
-
             <FlatList
                 ListHeaderComponent={() => (
                     <>
                         <View className={"home-header"}>
                             <View className={"home-user"}>
-                                <Image source={images.avatar} className={"home-avatar"}/>
-                                <Text className={"home-user-name"}>{HOME_USER.name}</Text>
+                                {/* Avatar: Clerk profile photo OR lettered fallback */}
+                                {user?.imageUrl ? (
+                                    <Image
+                                        source={{ uri: user.imageUrl }}
+                                        className={"home-avatar"}
+                                    />
+                                ) : (
+                                    <View
+                                        className={"home-avatar items-center justify-center"}
+                                        style={{ backgroundColor: colors.accent + '33' }}>
+                                        <Text
+                                            className={"text-2xl font-sans-bold"}
+                                            style={{ color: colors.accent }}>
+                                            {initial}
+                                        </Text>
+                                    </View>
+                                )}
+                                <Text className={"home-user-name"}>{displayName}</Text>
                             </View>
                             <Image source={icons.add} className={"home-add-icon"} />
                         </View>
@@ -69,13 +95,6 @@ export default function Index() {
                       ListEmptyComponent={<Text className={"home-empty-state"}>No subscriptions yet</Text>}
                       contentContainerClassName={"pb-20"}
             />
-
-          {/*<SubscriptionCard*/}
-          {/*    {...HOME_SUBSCRIPTIONS[0]}*/}
-          {/*    expanded={expandedSubscriptionId === HOME_SUBSCRIPTIONS[0].id}*/}
-          {/*    onPress={() => setExpandedSubscriptionId((currentId) =>(currentId === HOME_SUBSCRIPTIONS[0].id ? null : HOME_SUBSCRIPTIONS[0].id))}*/}
-          {/*/>*/}
-      {/*</View>*/}
     </SafeAreaView>
   );
 }
